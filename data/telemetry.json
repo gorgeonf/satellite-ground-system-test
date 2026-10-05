@@ -1,0 +1,29 @@
+[
+  {
+    "timestamp": "2026-10-05T10:15:00",
+    "satellite_id": "TESTSAT-1",
+    "temperature": 24.5,
+    "battery_voltage": 28.1,
+    "signal_strength": -72,
+    "packet_sequence": 1042,
+    "communication_status": "OK"
+  },
+  {
+    "timestamp": "2026-10-05T10:16:00",
+    "satellite_id": "TESTSAT-1",
+    "temperature": 25.1,
+    "battery_voltage": 27.9,
+    "signal_strength": -74,
+    "packet_sequence": 1043,
+    "communication_status": "OK"
+  },
+  {
+    "timestamp": "2026-10-05T10:17:00",
+    "satellite_id": "TESTSAT-1",
+    "temperature": 65,
+    "battery_voltage": 27.9,
+    "signal_strength": -74,
+    "packet_sequence": 1044,
+    "communication_status": "OK"
+  }
+]

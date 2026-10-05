@@ -1,0 +1,16 @@
+{
+  "REQ-TEMP-001": {
+    "description": "Satellite temperature shall remain between -20°C and +60°C, inclusive.",
+    "type": "range",
+    "parameter": "temperature",
+    "min": -20,
+    "max": 60
+  },
+  "REQ-BATTERY-002": {
+    "description": "Satellite battery voltage shall remain between 25V and 55V, inclusive.",
+    "type": "range",
+    "parameter": "voltage",
+    "min": 25,
+    "max": 55
+  }
+}
