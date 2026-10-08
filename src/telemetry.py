@@ -4,22 +4,27 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
-def check_temperature(telemetry: list, specifications: dict):
+def check_temperature(telemetry: list, specifications: dict) -> list:
     """
     This function verifies REQ-TEMP-001 against telemetry
 
     :param telemetry: list of telemetry records
     :param specifications: dictionary of requirements
-    :return: True if all telemetry records comply with REQ-TEMP-001, False otherwise
+    :return: list of telemetry records that do not comply with REQ-TEMP-001
     """
+    invalid_records = []
     temp_req_id = "REQ-TEMP-001"
     try:
         requirement = specifications[temp_req_id]
     except KeyError:
         raise KeyError(f"{temp_req_id} is not present in the specifications file.")
 
-    min_temp = requirement["min"]
-    max_temp = requirement["max"]
+    try:
+        min_temp = requirement["min"]
+        max_temp = requirement["max"]
+    except KeyError as e:
+        raise KeyError(f"{temp_req_id} is missing the {e} limit in the specifications file.")
+
     for data in telemetry:
         temp = data.get("temperature")
         if temp is None:
@@ -29,8 +34,10 @@ def check_temperature(telemetry: list, specifications: dict):
             print(
                 f"WARNING: {data.get('packet_sequence')} does not comply with {temp_req_id} "
                 f"--> {temp} not in [{min_temp};{max_temp}]")
-            return False
-    return True
+            invalid_records.append(data.get('packet_sequence'))
+    if invalid_records:
+        print(f"Found {len(invalid_records)} records that do not comply with {temp_req_id}")
+    return invalid_records
 
 
 def get_data(telemetry_file: Path) -> list:

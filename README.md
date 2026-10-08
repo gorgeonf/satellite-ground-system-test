@@ -1,16 +1,20 @@
 # Satellite Ground System Test
 
-This project is a small Python-based telemetry validation example for a satellite ground system. It reads sample telemetry data from a JSON file, loads requirement definitions from another JSON file, and checks whether the recorded values stay within the configured limits.
-
+This project is a small Python telemetry verification example for a satellite ground system.
+It reads sample telemetry data from a JSON file, loads requirement definitions from another JSON file,
+and checks whether the recorded values comply with the requirements. The checking functions are
+tested with pytest, and the tests run on Jenkins.
 
 ## Why this project exists
 
-The repository demonstrates a lightweight monitoring workflow often used in mission operations:
+The repository shows a requirements-based verification workflow:
 
-- ingest telemetry payloads from disk
-- compare sensor readings against engineering requirements
-- flag out-of-range values for review
-- keep requirements in a separate JSON specification file for easy updates
+- read telemetry data from disk
+- compare telemetry values against engineering requirements
+- report records that do not comply with a requirement
+- keep requirements in a separate JSON specification file so they can be changed without touching the code
+- test the checking functions with pytest
+- run the tests on Jenkins, manually and automatically when the GitHub repository changes
 
 ## Project structure
 
@@ -46,11 +50,13 @@ The data file at `data/telemetry.json` contains a list of telemetry records such
 
 ### Requirement definitions
 
-The specification file at `specifications/requirements.json` stores requirement thresholds in JSON format. It currently includes:
+The specification file at `specifications/requirements.json` stores requirement thresholds in JSON format. It currently
+includes:
 
 - `REQ-TEMP-001`: temperature must be in the range [-20, 60]
 
-The actual Python script currently validates the temperature requirement, but the structure is ready to be extended to the battery requirement and other telemetry checks.
+The actual Python script currently validates the temperature requirement, but the structure is ready to be extended to
+the battery requirement and other telemetry checks.
 
 ## Setup
 
@@ -74,9 +80,7 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-
-
 ## Notes
 
-This project is intentionally minimal and is meant as a starter example for ground-system telemetry screening. 
+This project is intentionally minimal and is meant as a starter example for ground-system telemetry screening.
 It can be expanded to support more requirements, richer validation logic, alerting, and CLI-based reporting.

@@ -1,0 +1,17 @@
+{
+  "REQ-TEMP-001": {
+    "description": "Description of the requirement.",
+    "type": "range",
+    "parameter": "temp",
+    "min": -20,
+    "max": 60
+  },
+  "REQ-TEMP-002": {
+    "description": "Description of another requirement."
+  },
+  "REQ-BATTERY-001": {
+    "description": "Description of the last requirement.",
+    "type": "range",
+    "parameter": "voltage"
+  }
+}
