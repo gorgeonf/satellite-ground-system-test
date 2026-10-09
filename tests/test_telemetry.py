@@ -29,3 +29,15 @@ def test_check_temperature(temperature_dataset, temperature_specifications):
 def test_check_temperature_wrong_requirements(input_telemetry, input_requirement, expected_result):
     with pytest.raises(KeyError, match=expected_result):
         check_temperature(input_telemetry, input_requirement)
+
+
+def test_check_temperature_missing_temperature(temperature_specifications):
+    input_telemetry = [
+        {
+            "timestamp": "2026-10-05T10:15:00",
+            "satellite_id": "TESTSAT-1",
+            "packet_sequence": 1000,
+        }, ]
+    expected_result = "Telemetry record 1000 does not contain temperature info."
+    with pytest.raises(ValueError, match=expected_result):
+        check_temperature(input_telemetry, temperature_specifications)
