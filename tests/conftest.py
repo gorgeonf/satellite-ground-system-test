@@ -1,6 +1,19 @@
 import pytest
 
 
+@pytest.fixture
+def temperature_specifications():
+    return {
+        "REQ-TEMP-001": {
+            "description": "Description of the requirement.",
+            "type": "range",
+            "parameter": "temp",
+            "min": -20,
+            "max": 60
+        }
+    }
+
+
 @pytest.fixture(params=
 [
     {
@@ -73,6 +86,7 @@ import pytest
         "input": [],
         "expected": []
     },
-])
+],
+    ids=["one_above_max", "all_valid", "lower_boundary", "upper_boundary", "empty_list"])
 def temperature_dataset(request):
     return request.param

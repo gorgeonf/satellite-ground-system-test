@@ -4,10 +4,11 @@ import pytest
 
 from src.telemetry import get_data, get_requirements
 
-TEST_TELEMETRY_DATA = Path(__file__).resolve().parent.parent / "tests/data/telemetry_test_data.json"
-TEST_REQ_DATA = Path(__file__).resolve().parent.parent / "tests/data/requirements_test_data.json"
-MISSING_FILE = Path(__file__).resolve().parent.parent / "tests/data/missing_file.json"
-INVALID_JSON = Path(__file__).resolve().parent.parent / "tests/data/invalid_json.json"
+TEST_DATA_DIR = Path(__file__).resolve().parent.parent
+TEST_TELEMETRY_DATA = TEST_DATA_DIR / "tests/data/telemetry_test_data.json"
+TEST_REQ_DATA = TEST_DATA_DIR / "tests/data/requirements_test_data.json"
+MISSING_FILE = TEST_DATA_DIR / "tests/data/missing_file.json"
+INVALID_JSON = TEST_DATA_DIR / "tests/data/invalid_json.json"
 
 
 def test_get_data():
@@ -54,10 +55,10 @@ def test_get_requirements():
 
 
 def test_get_requirements_missing_file():
-    with pytest.raises(FileNotFoundError, match="missing_file.json does not exist."):
+    with pytest.raises(FileNotFoundError, match="missing_file.json does not exist"):
         get_requirements(MISSING_FILE)
 
 
 def test_get_requirements_invalid_json():
-    with pytest.raises(ValueError, match="invalid_json.json is not a valid JSON format."):
+    with pytest.raises(ValueError, match="invalid_json.json is not a valid JSON format"):
         get_requirements(INVALID_JSON)
