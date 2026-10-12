@@ -4,39 +4,44 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
-def check_temperature(telemetry: list, specifications: dict) -> list:
+def check_range(telemetry: list, specifications: dict, req_id: str) -> list:
     """
-    This function verifies REQ-TEMP-001 against telemetry
+    This function verifies requirement req_id against telemetry
 
     :param telemetry: list of telemetry records
     :param specifications: dictionary of requirements
-    :return: list of telemetry records that do not comply with REQ-TEMP-001
+    :param req_id: requirement to check
+    :return: list of telemetry records that do not comply with req_id
     """
     invalid_records = []
-    temp_req_id = "REQ-TEMP-001"
     try:
-        requirement = specifications[temp_req_id]
+        requirement = specifications[req_id]
     except KeyError:
-        raise KeyError(f"{temp_req_id} is not present in the specifications file.")
+        raise KeyError(f"{req_id} is not present in the specifications file.")
 
     try:
-        min_temp = requirement["min"]
-        max_temp = requirement["max"]
+        parameter = requirement["parameter"]
+    except KeyError:
+        raise KeyError(f"{req_id} is missing the parameter attribute in the specifications file.")
+
+    try:
+        min_value = requirement["min"]
+        max_value = requirement["max"]
     except KeyError as e:
-        raise KeyError(f"{temp_req_id} is missing the {e} limit in the specifications file.")
+        raise KeyError(f"{req_id} is missing the {e} limit in the specifications file.")
 
     for data in telemetry:
-        temp = data.get("temperature")
+        temp = data.get(parameter)
         if temp is None:
             raise ValueError(
-                f"Telemetry record {data.get('packet_sequence')} does not contain temperature info.")
-        if not (max_temp >= temp >= min_temp):
+                f"Telemetry record {data.get('packet_sequence')} does not contain {parameter} info.")
+        if not (max_value >= temp >= min_value):
             print(
-                f"WARNING: {data.get('packet_sequence')} does not comply with {temp_req_id} "
-                f"--> {temp} not in [{min_temp};{max_temp}]")
+                f"WARNING: {data.get('packet_sequence')} does not comply with {req_id} "
+                f"--> {temp} not in [{min_value};{max_value}]")
             invalid_records.append(data.get('packet_sequence'))
     if invalid_records:
-        print(f"Found {len(invalid_records)} records that do not comply with {temp_req_id}")
+        print(f"Found {len(invalid_records)} records that do not comply with {req_id}")
     return invalid_records
 
 
