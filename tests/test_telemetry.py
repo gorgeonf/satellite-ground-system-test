@@ -1,15 +1,57 @@
 import pytest
 
 from src.telemetry import check_range
-from tests.conftest import TEST_RANGE_PARAMETERS_DATASET
+from tests.conftest import make_records
 
 
-@pytest.mark.parametrize("range_parameters_dataset", TEST_RANGE_PARAMETERS_DATASET)
-def test_check_range_values(specifications_range_test_data, range_parameters_dataset):
-    req_id = range_parameters_dataset.req_id
-    input_dataset = range_parameters_dataset.input
-    expected_result = range_parameters_dataset.expected
-    assert check_range(input_dataset, specifications_range_test_data, req_id) == expected_result
+@pytest.mark.parametrize("telemetry, req_id, expected_result",
+                         [
+                             pytest.param(make_records("temperature", [24.5, 65, 20]), "REQ-TEMP-001", [1043],
+                                          id="temperature_failure_in_middle"),
+                             pytest.param(make_records("temperature", [24.5, -30, 5, 70, 65]), "REQ-TEMP-001",
+                                          [1043, 1045, 1046],
+                                          id="temperature_several_failures"),
+                             pytest.param(make_records("temperature", [24.5, 15, 20]), "REQ-TEMP-001", [],
+                                          id="temperature_all_valid"),
+                             pytest.param(make_records("temperature", [-21, -20, -19]), "REQ-TEMP-001", [1042],
+                                          id="temperature_lower_boundary"),
+                             pytest.param(make_records("temperature", [59, 60, 61]), "REQ-TEMP-001", [1044],
+                                          id="temperature_upper_boundary"),
+                             pytest.param([], "REQ-TEMP-001", [], id="temperature_empty_list"),
+
+                             pytest.param(make_records("battery_voltage", [26, 20, 30]), "REQ-BATTERY-001", [1043],
+                                          id="battery_voltage_failure_in_middle"),
+                             pytest.param(make_records("battery_voltage", [12, 20, 26, 28, 34]), "REQ-BATTERY-001",
+                                          [1042, 1043, 1046],
+                                          id="battery_voltage_several_failures"),
+                             pytest.param(make_records("battery_voltage", [24.5, 28, 30]), "REQ-BATTERY-001", [],
+                                          id="battery_voltage_all_valid"),
+                             pytest.param(make_records("battery_voltage", [23, 24, 25]), "REQ-BATTERY-001", [1042],
+                                          id="battery_voltage_lower_boundary"),
+                             pytest.param(make_records("battery_voltage", [31, 32, 33]), "REQ-BATTERY-001", [1044],
+                                          id="battery_voltage_upper_boundary"),
+                             pytest.param([], "REQ-BATTERY-001", [], id="battery_voltage_empty_list"),
+
+                             pytest.param(make_records("signal_strength", [-70, -100, -15]), "REQ-SIGNAL-STRENGTH-001",
+                                          [1043],
+                                          id="signal_strength_failure_in_middle"),
+                             pytest.param(make_records("signal_strength", [-95, 10, -120, -50, -10]),
+                                          "REQ-SIGNAL-STRENGTH-001",
+                                          [1042, 1043, 1044],
+                                          id="signal_strength_several_failures"),
+                             pytest.param(make_records("signal_strength", [-80, -70, -81]), "REQ-SIGNAL-STRENGTH-001",
+                                          [],
+                                          id="signal_strength_all_valid"),
+                             pytest.param(make_records("signal_strength", [-91, -90, -89]), "REQ-SIGNAL-STRENGTH-001",
+                                          [1042],
+                                          id="signal_strength_lower_boundary"),
+                             pytest.param(make_records("signal_strength", [-1, 0, 1]), "REQ-SIGNAL-STRENGTH-001",
+                                          [1044],
+                                          id="signal_strength_upper_boundary"),
+                             pytest.param([], "REQ-SIGNAL-STRENGTH-001", [], id="signal_strength_empty_list"),
+                         ])
+def test_check_range_values(telemetry, req_id, expected_result, specifications_range_test_data):
+    assert check_range(telemetry, specifications_range_test_data, req_id) == expected_result
 
 
 @pytest.mark.parametrize("input_telemetry, input_requirement, req_id, expected_result", [
