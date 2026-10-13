@@ -25,5 +25,14 @@
     "signal_strength": -74,
     "packet_sequence": 1044,
     "communication_status": "OK"
+  },
+  {
+    "timestamp": "2026-10-05T10:18:00",
+    "satellite_id": "TESTSAT-1",
+    "temperature": 59,
+    "battery_voltage": 33,
+    "signal_strength": -74,
+    "packet_sequence": 1044,
+    "communication_status": "OK"
   }
 ]

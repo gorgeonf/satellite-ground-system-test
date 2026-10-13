@@ -11,6 +11,7 @@ def test_temperature_requirements():
     """
     requirements = get_requirements(SPEC_PATH)
     assert "REQ-TEMP-001" in requirements
+    assert requirements["REQ-TEMP-001"]["type"] == "range"
     assert requirements["REQ-TEMP-001"]["parameter"] == "temperature"
     assert requirements["REQ-TEMP-001"]['min'] == -20
     assert requirements["REQ-TEMP-001"]['max'] == 60
@@ -21,6 +22,7 @@ def test_battery_requirements():
     """
     requirements = get_requirements(SPEC_PATH)
     assert "REQ-BATTERY-001" in requirements
+    assert requirements["REQ-BATTERY-001"]["type"] == "range"
     assert requirements["REQ-BATTERY-001"]["parameter"] == "battery_voltage"
     assert requirements["REQ-BATTERY-001"]['min'] == 24
     assert requirements["REQ-BATTERY-001"]['max'] == 32
@@ -31,6 +33,18 @@ def test_signal_strength_requirements():
     """
     requirements = get_requirements(SPEC_PATH)
     assert "REQ-SIGNAL-STRENGTH-001" in requirements
+    assert requirements["REQ-SIGNAL-STRENGTH-001"]["type"] == "range"
     assert requirements["REQ-SIGNAL-STRENGTH-001"]["parameter"] == "signal_strength"
     assert requirements["REQ-SIGNAL-STRENGTH-001"]['min'] == -90
     assert requirements["REQ-SIGNAL-STRENGTH-001"]['max'] == 0
+
+
+def test_communication_requirements():
+    """
+    The real requirements file defines REQ-COMM-001 with status OK.
+    """
+    requirements = get_requirements(SPEC_PATH)
+    assert "REQ-COMM-001" in requirements
+    assert requirements["REQ-COMM-001"]['type'] == 'status'
+    assert requirements["REQ-COMM-001"]["parameter"] == "communication_status"
+    assert requirements["REQ-COMM-001"]['value'] == 'OK'

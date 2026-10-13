@@ -145,3 +145,21 @@ def test_check_range_missing_parameter(specifications_range_test_data, req_id, p
         }, ]
     with pytest.raises(ValueError, match=expected_result):
         check_range(input_telemetry, specifications_range_test_data, req_id)
+
+
+def test_check_range_wrong_type():
+    input_telemetry = [
+        {
+            "timestamp": "2026-10-05T10:15:00",
+            "temperature": 24.5,
+            "packet_sequence": 1042,
+        }]
+    input_requirement = {
+        "REQ-TEMP-001": {
+            "type": "status",
+            "parameter": "temperature",
+            "min": -20,
+            "max": 60
+        }}
+    with pytest.raises(ValueError, match="REQ-TEMP-001 is not a range requirement."):
+        check_range(input_telemetry, input_requirement, "REQ-TEMP-001")
