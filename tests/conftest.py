@@ -28,6 +28,18 @@ def specifications_range_test_data():
     }
 
 
+@pytest.fixture
+def specifications_status_test_data():
+    return {
+        "REQ-COMM-001": {
+            "description": "Satellite communication status shall be OK.",
+            "type": "status",
+            "parameter": "communication_status",
+            "value": "OK"
+        },
+    }
+
+
 def make_records(parameter: str, values: list) -> list:
     packet_number = 1042
     data_set = []

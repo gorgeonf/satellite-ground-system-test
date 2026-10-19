@@ -4,35 +4,35 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
-def check_range(telemetry: list, specifications: dict, req_id: str) -> list:
+def check_range(telemetry: list, specifications: dict, range_req_id: str) -> list:
     """
     This function verifies a range requirement (min and max limit on one parameter) against telemetry.
 
-        :param telemetry: list of telemetry records
-        :param specifications: dictionary of requirements
-        :param req_id: ID of the range requirement to verify (e.g. "REQ-TEMP-001")
-        :return: list of packet sequence numbers of the records that do not comply with the requirement
+   :param telemetry: list of telemetry records
+    :param specifications: dictionary of requirements
+    :param range_req_id: ID of the range requirement to verify (e.g. "REQ-TEMP-001")
+    :return: list of packet sequence numbers of the records that do not comply with the requirement
 
     """
     invalid_records = []
     try:
-        requirement = specifications[req_id]
+        requirement = specifications[range_req_id]
     except KeyError:
-        raise KeyError(f"{req_id} is not present in the specifications file.")
+        raise KeyError(f"{range_req_id} is not present in the specifications file.")
+
+    if requirement.get("type") != "range":
+        raise ValueError(f"{range_req_id} is not a range requirement.")
 
     try:
         parameter = requirement["parameter"]
     except KeyError:
-        raise KeyError(f"{req_id} is missing the parameter attribute in the specifications file.")
-
-    if requirement.get("type") != "range":
-        raise ValueError(f"{req_id} is not a range requirement.")
+        raise KeyError(f"{range_req_id} is missing the parameter attribute in the specifications file.")
 
     try:
         min_value = requirement["min"]
         max_value = requirement["max"]
     except KeyError as e:
-        raise KeyError(f"{req_id} is missing the {e} limit in the specifications file.")
+        raise KeyError(f"{range_req_id} is missing the {e} limit in the specifications file.")
 
     for data in telemetry:
         temp = data.get(parameter)
@@ -41,45 +41,42 @@ def check_range(telemetry: list, specifications: dict, req_id: str) -> list:
                 f"Telemetry record {data.get('packet_sequence')} does not contain {parameter} info.")
         if not (max_value >= temp >= min_value):
             print(
-                f"WARNING: {data.get('packet_sequence')} does not comply with {req_id} "
+                f"WARNING: {data.get('packet_sequence')} does not comply with {range_req_id} "
                 f"--> {temp} not in [{min_value};{max_value}]")
             invalid_records.append(data.get('packet_sequence'))
     if invalid_records:
-        print(f"Found {len(invalid_records)} records that do not comply with {req_id}")
+        print(f"Found {len(invalid_records)} records that do not comply with {range_req_id}")
     return invalid_records
 
 
-def check_status(telemetry: list, specifications: dict, req_id: str) -> list:
+def check_status(telemetry: list, specifications: dict, status_req_id: str) -> list:
     """
     This function verifies a status requirement against telemetry.
 
-        :param telemetry: list of telemetry records
-        :param specifications: dictionary of requirements
-        :param req_id: ID of the range requirement to verify (e.g. "REQ-COMM-001")
-        :return: list of packet sequence numbers of the records that do not comply with the requirement
+    :param telemetry: list of telemetry records
+    :param specifications: dictionary of requirements
+    :param status_req_id: ID of the status requirement to verify (e.g. "REQ-COMM-001")
+    :return: list of packet sequence numbers of the records that do not comply with the requirement
 
     """
     invalid_records = []
     try:
-        requirement = specifications[req_id]
+        requirement = specifications[status_req_id]
     except KeyError:
-        raise KeyError(f"{req_id} is not present in the specifications file.")
+        raise KeyError(f"{status_req_id} is not present in the specifications file.")
+
+    if requirement.get("type") != "status":
+        raise ValueError(f"{status_req_id} is not a status requirement.")
 
     try:
         parameter = requirement["parameter"]
     except KeyError:
-        raise KeyError(f"{req_id} is missing the parameter attribute in the specifications file.")
-
-    if requirement.get("type") != "status":
-        raise ValueError(f"{req_id} is not a status requirement.")
+        raise KeyError(f"{status_req_id} is missing the parameter attribute in the specifications file.")
 
     try:
         req_status = requirement["value"]
     except KeyError as e:
-        raise KeyError(f"{req_id} is missing the {e} in the specifications file.")
-
-    if requirement.get("type") != "status":
-        raise ValueError(f"{req_id} is not a status requirement.")
+        raise KeyError(f"{status_req_id} is missing the {e} in the specifications file.")
 
     for data in telemetry:
         telemetry_status = data.get(parameter)
@@ -88,11 +85,11 @@ def check_status(telemetry: list, specifications: dict, req_id: str) -> list:
                 f"Telemetry record {data.get('packet_sequence')} does not contain {parameter} info.")
         if telemetry_status != req_status:
             print(
-                f"WARNING: {data.get('packet_sequence')} does not comply with {req_id} "
+                f"WARNING: {data.get('packet_sequence')} does not comply with {status_req_id} "
                 f"--> {telemetry_status} is not equal to  {req_status}")
             invalid_records.append(data.get('packet_sequence'))
     if invalid_records:
-        print(f"Found {len(invalid_records)} records that do not comply with {req_id}")
+        print(f"Found {len(invalid_records)} records that do not comply with {status_req_id}")
     return invalid_records
 
 

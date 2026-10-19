@@ -1,6 +1,6 @@
 import pytest
 
-from src.telemetry import check_range
+from src.telemetry import check_range, check_status
 from tests.conftest import make_records
 
 
@@ -50,21 +50,21 @@ from tests.conftest import make_records
                                           id="signal_strength_upper_boundary"),
                              pytest.param([], "REQ-SIGNAL-STRENGTH-001", [], id="signal_strength_empty_list"),
                          ])
-def test_check_range_values(telemetry, req_id, expected_result, specifications_range_test_data):
+def test_check_range_values(specifications_range_test_data, telemetry, req_id, expected_result):
     assert check_range(telemetry, specifications_range_test_data, req_id) == expected_result
 
 
 @pytest.mark.parametrize("input_telemetry, input_requirement, req_id, expected_result", [
     pytest.param(
-        [], {"REQ-PRESSURE-001": {"description": "Wrong requirement for check_temperature."}}, "REQ-TEMP-001",
+        [], {"REQ-PRESSURE-001": {"description": "Wrong requirement for check_range."}}, "REQ-TEMP-001",
         "REQ-TEMP-001 is not present in the specifications file.",
         id="requirement_missing_temperature"),
     pytest.param(
-        [], {"REQ-PRESSURE-001": {"description": "Wrong requirement for check_temperature."}}, "REQ-BATTERY-001",
+        [], {"REQ-PRESSURE-001": {"description": "Wrong requirement for check_range."}}, "REQ-BATTERY-001",
         "REQ-BATTERY-001 is not present in the specifications file.",
         id="requirement_missing_battery_voltage"),
     pytest.param(
-        [], {"REQ-PRESSURE-001": {"description": "Wrong requirement for check_temperature."}},
+        [], {"REQ-PRESSURE-001": {"description": "Wrong requirement for check_range."}},
         "REQ-SIGNAL-STRENGTH-001", "REQ-SIGNAL-STRENGTH-001 is not present in the specifications file.",
         id="requirement_missing_signal_strength"),
 
@@ -131,12 +131,12 @@ def test_check_range_wrong_requirements(input_telemetry, input_requirement, req_
         check_range(input_telemetry, input_requirement, req_id)
 
 
-@pytest.mark.parametrize("req_id, parameter, expected_result", [
-    ("REQ-TEMP-001", "temperature", "Telemetry record 1000 does not contain temperature info."),
-    ("REQ-BATTERY-001", "battery_voltage", "Telemetry record 1000 does not contain battery_voltage info."),
-    ("REQ-SIGNAL-STRENGTH-001", "signal_strength", "Telemetry record 1000 does not contain signal_strength info.")
+@pytest.mark.parametrize("req_id, expected_result", [
+    ("REQ-TEMP-001", "Telemetry record 1000 does not contain temperature info."),
+    ("REQ-BATTERY-001", "Telemetry record 1000 does not contain battery_voltage info."),
+    ("REQ-SIGNAL-STRENGTH-001", "Telemetry record 1000 does not contain signal_strength info."),
 ])
-def test_check_range_missing_parameter(specifications_range_test_data, req_id, parameter, expected_result):
+def test_check_range_missing_parameter_in_telemetry(specifications_range_test_data, req_id, expected_result):
     input_telemetry = [
         {
             "timestamp": "2026-10-05T10:15:00",
@@ -147,7 +147,7 @@ def test_check_range_missing_parameter(specifications_range_test_data, req_id, p
         check_range(input_telemetry, specifications_range_test_data, req_id)
 
 
-def test_check_range_wrong_type():
+def test_check_range_wrong_type_in_requirement():
     input_telemetry = [
         {
             "timestamp": "2026-10-05T10:15:00",
@@ -163,3 +163,81 @@ def test_check_range_wrong_type():
         }}
     with pytest.raises(ValueError, match="REQ-TEMP-001 is not a range requirement."):
         check_range(input_telemetry, input_requirement, "REQ-TEMP-001")
+
+
+@pytest.mark.parametrize("input_telemetry, req_id, expected_result", [
+    pytest.param(make_records("communication_status", ["OK", "NOK", "OK"]), "REQ-COMM-001", [1043],
+                 id="communication_status_failure_in_middle"),
+    pytest.param(make_records("communication_status", ["OK", "NOK", "SOMETHING", "OK", "NOK"]), "REQ-COMM-001",
+                 [1043, 1044, 1046],
+                 id="communication_status_several_failures"),
+    pytest.param(make_records("communication_status", ["OK", "OK", "OK"]), "REQ-COMM-001", [],
+                 id="communication_status_all_valid"),
+    pytest.param(make_records("communication_status", ["NOK", "NOK", "NOK"]), "REQ-COMM-001", [1042, 1043, 1044],
+                 id="communication_status_all_failures"),
+    pytest.param(make_records("communication_status", [21, "OK", "OK"]), "REQ-COMM-001", [1042],
+                 id="communication_status_not_a_string"),
+    pytest.param([], "REQ-COMM-001", [], id="communication_status_empty_list"),
+])
+def test_check_status_values(specifications_status_test_data, input_telemetry, req_id, expected_result):
+    assert check_status(input_telemetry, specifications_status_test_data, req_id) == expected_result
+
+
+@pytest.mark.parametrize("input_telemetry, input_requirement, req_id, expected_result", [
+    pytest.param(
+        [], {"REQ-TEMP-001": {"description": "Wrong requirement for check_status."}}, "REQ-COMM-001",
+        "REQ-COMM-001 is not present in the specifications file.",
+        id="status_requirement_missing"),
+
+    pytest.param(
+        [],
+        {"REQ-COMM-001": {"description": "Satellite communication status shall be OK.",
+                          "type": "status",
+                          "parameter": "communication_status"}}, "REQ-COMM-001",
+        "REQ-COMM-001 is missing the 'value' in the specifications file.",
+        id="status_value_missing"),
+
+    pytest.param(
+        [],
+        {"REQ-COMM-001": {"description": "Satellite communication status shall be OK.",
+                          "type": "status",
+                          "value": "OK"}}, "REQ-COMM-001",
+        "REQ-COMM-001 is missing the parameter attribute in the specifications file.",
+        id="status_parameter_missing"),
+
+])
+def test_check_status_wrong_requirements(input_telemetry, input_requirement, req_id, expected_result):
+    with pytest.raises(KeyError, match=expected_result):
+        check_status(input_telemetry, input_requirement, req_id)
+
+
+@pytest.mark.parametrize("req_id, expected_result", [
+    ("REQ-COMM-001", "Telemetry record 1000 does not contain communication_status info."),
+])
+def test_check_status_missing_parameter_in_telemetry(specifications_status_test_data, req_id, expected_result):
+    input_telemetry = [
+        {
+            "timestamp": "2026-10-05T10:15:00",
+            "satellite_id": "TESTSAT-1",
+            "packet_sequence": 1000,
+        }, ]
+    with pytest.raises(ValueError, match=expected_result):
+        check_status(input_telemetry, specifications_status_test_data, req_id)
+
+
+def test_check_status_wrong_type_in_requirement():
+    input_telemetry = [
+        {
+            "timestamp": "2026-10-05T10:15:00",
+            "communication_status": "OK",
+            "packet_sequence": 1042,
+        }]
+    input_requirement = {
+        "REQ-COMM-001": {
+            "description": "Satellite communication status shall be OK.",
+            "type": "range",
+            "parameter": "communication_status",
+            "value": "OK"
+        }}
+    with pytest.raises(ValueError, match="REQ-COMM-001 is not a status requirement."):
+        check_status(input_telemetry, input_requirement, "REQ-COMM-001")
