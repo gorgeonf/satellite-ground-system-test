@@ -135,8 +135,9 @@ def test_check_range_values(specifications_range_test_data, telemetry, req_id, e
 
 ])
 def test_check_range_wrong_requirements(input_telemetry, input_requirement, req_id, expected_result):
-    with pytest.raises(KeyError, match=expected_result):
-        check_range(input_telemetry, input_requirement, req_id)
+    with pytest.raises(KeyError) as exc_info:
+        check_range([], input_requirement, req_id)
+    assert exc_info.value.args[0] == expected_result
 
 
 @pytest.mark.parametrize("req_id, expected_result", [
@@ -150,8 +151,9 @@ def test_check_range_missing_parameter_in_telemetry(specifications_range_test_da
             "satellite_id": "TESTSAT-1",
             "packet_sequence": 1000,
         }, ]
-    with pytest.raises(ValueError, match=expected_result):
+    with pytest.raises(ValueError) as exc_info:
         check_range(input_telemetry, specifications_range_test_data, req_id)
+    assert exc_info.value.args[0] == expected_result
 
 
 def test_check_range_wrong_type_in_requirement():
@@ -168,8 +170,9 @@ def test_check_range_wrong_type_in_requirement():
             "min": -20,
             "max": 60
         }}
-    with pytest.raises(ValueError, match="REQ-TEMP-001 is not a range requirement."):
+    with pytest.raises(ValueError) as exc_info:
         check_range(input_telemetry, input_requirement, "REQ-TEMP-001")
+    assert exc_info.value.args[0] == "REQ-TEMP-001 is not a range requirement."
 
 
 @pytest.mark.parametrize("input_telemetry, req_id, expected_result", [
@@ -214,8 +217,9 @@ def test_check_status_values(specifications_status_test_data, input_telemetry, r
 
 ])
 def test_check_status_wrong_requirements(input_telemetry, input_requirement, req_id, expected_result):
-    with pytest.raises(KeyError, match=expected_result):
+    with pytest.raises(KeyError) as exc_info:
         check_status(input_telemetry, input_requirement, req_id)
+    assert exc_info.value.args[0] == expected_result
 
 
 @pytest.mark.parametrize("req_id, expected_result", [
@@ -228,9 +232,9 @@ def test_check_status_missing_parameter_in_telemetry(specifications_status_test_
             "satellite_id": "TESTSAT-1",
             "packet_sequence": 1000,
         }, ]
-    with pytest.raises(ValueError, match=expected_result):
+    with pytest.raises(ValueError) as exc_info:
         check_status(input_telemetry, specifications_status_test_data, req_id)
-
+    assert exc_info.value.args[0] == expected_result
 
 def test_check_status_wrong_type_in_requirement():
     input_telemetry = [
@@ -246,9 +250,9 @@ def test_check_status_wrong_type_in_requirement():
             "parameter": "communication_status",
             "value": "OK"
         }}
-    with pytest.raises(ValueError, match="REQ-COMM-001 is not a status requirement."):
+    with pytest.raises(ValueError) as exc_info:
         check_status(input_telemetry, input_requirement, "REQ-COMM-001")
-
+    assert exc_info.value.args[0] == "REQ-COMM-001 is not a status requirement."
 
 def test_check_sequence_wrong_type_in_requirement():
     input_telemetry = [
@@ -262,8 +266,9 @@ def test_check_sequence_wrong_type_in_requirement():
             "parameter": "packet_sequence",
             "step": 1
         }}
-    with pytest.raises(ValueError, match="REQ-SEQ-001 is not a sequence requirement."):
+    with pytest.raises(ValueError) as exc_info:
         check_sequence(input_telemetry, input_requirement, "REQ-SEQ-001")
+    assert exc_info.value.args[0] == "REQ-SEQ-001 is not a sequence requirement."
 
 
 @pytest.mark.parametrize("input_telemetry, req_id, expected_result", [
@@ -286,8 +291,9 @@ def test_check_sequence_wrong_type_in_requirement():
 ])
 def test_check_sequence_telemetry_wrong_parameter(specifications_sequence_test_data, input_telemetry, req_id,
                                                   expected_result):
-    with pytest.raises(ValueError, match=expected_result):
+    with pytest.raises(ValueError) as exc_info:
         check_sequence(input_telemetry, specifications_sequence_test_data, req_id)
+    assert exc_info.value.args[0] == expected_result
 
 
 def make_telemetry_sequence(sequence: list) -> list:
@@ -304,8 +310,10 @@ def make_telemetry_sequence(sequence: list) -> list:
                  id="no_step"),
 ])
 def test_check_sequence_wrong_requirements(input_requirement, req_id, expected_result):
-    with pytest.raises(KeyError, match=expected_result):
+    with pytest.raises(KeyError) as exc_info:
         check_sequence([], input_requirement, req_id)
+    assert exc_info.value.args[0] == expected_result
+
 
 
 @pytest.mark.parametrize("input_requirement, req_id, expected_result", [
