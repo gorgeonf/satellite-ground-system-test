@@ -1,7 +1,15 @@
 import pytest
 
-from src.telemetry import check_range, check_status
-from tests.conftest import make_records
+from src.telemetry import check_range, check_status, check_sequence
+
+
+def make_records(parameter: str, values: list) -> list:
+    packet_number = 1042
+    data_set = []
+    for v in values:
+        data_set.append({parameter: v, "packet_sequence": packet_number})
+        packet_number += 1
+    return data_set
 
 
 @pytest.mark.parametrize("telemetry, req_id, expected_result",
@@ -134,8 +142,7 @@ def test_check_range_wrong_requirements(input_telemetry, input_requirement, req_
 @pytest.mark.parametrize("req_id, expected_result", [
     ("REQ-TEMP-001", "Telemetry record 1000 does not contain temperature info."),
     ("REQ-BATTERY-001", "Telemetry record 1000 does not contain battery_voltage info."),
-    ("REQ-SIGNAL-STRENGTH-001", "Telemetry record 1000 does not contain signal_strength info."),
-])
+    ("REQ-SIGNAL-STRENGTH-001", "Telemetry record 1000 does not contain signal_strength info.")])
 def test_check_range_missing_parameter_in_telemetry(specifications_range_test_data, req_id, expected_result):
     input_telemetry = [
         {
@@ -241,3 +248,113 @@ def test_check_status_wrong_type_in_requirement():
         }}
     with pytest.raises(ValueError, match="REQ-COMM-001 is not a status requirement."):
         check_status(input_telemetry, input_requirement, "REQ-COMM-001")
+
+
+def test_check_sequence_wrong_type_in_requirement():
+    input_telemetry = [
+        {
+            "timestamp": "2026-10-05T10:15:00",
+            "packet_sequence": 1042,
+        }]
+    input_requirement = {
+        "REQ-SEQ-001": {
+            "type": "status",
+            "parameter": "packet_sequence",
+            "step": 1
+        }}
+    with pytest.raises(ValueError, match="REQ-SEQ-001 is not a sequence requirement."):
+        check_sequence(input_telemetry, input_requirement, "REQ-SEQ-001")
+
+
+@pytest.mark.parametrize("input_telemetry, req_id, expected_result", [
+    pytest.param([{"packet_number": 1042, }, {"packet_sequence": 1043, }, {"packet_sequence": 1044, }],
+                 "REQ-SEQ-001",
+                 "One telemetry record does not contain packet_sequence info.",
+                 id="packet_parameter_wrong_name_start"),
+    pytest.param([{"packet_sequence": 1042, }, {"packet_number": 1043, }, {"packet_sequence": 1044, }],
+                 "REQ-SEQ-001",
+                 "One telemetry record does not contain packet_sequence info.",
+                 id="packet_parameter_wrong_name_middle"),
+    pytest.param([{"packet_sequence": 1042, }, {"satellite_id": "TESTSAT-1"}],
+                 "REQ-SEQ-001",
+                 "One telemetry record does not contain packet_sequence info.",
+                 id="packet_parameter_missing_end"),
+    pytest.param([{}, {"satellite_id": "TESTSAT-1", "packet_sequence": 1042}],
+                 "REQ-SEQ-001",
+                 "One telemetry record does not contain packet_sequence info.",
+                 id="packet_parameter_missing_start"),
+])
+def test_check_sequence_telemetry_wrong_parameter(specifications_sequence_test_data, input_telemetry, req_id,
+                                                  expected_result):
+    with pytest.raises(ValueError, match=expected_result):
+        check_sequence(input_telemetry, specifications_sequence_test_data, req_id)
+
+
+def make_telemetry_sequence(sequence: list) -> list:
+    return [{"packet_sequence": packet} for packet in sequence]
+
+
+@pytest.mark.parametrize("input_requirement, req_id, expected_result", [
+    pytest.param({"REQ-TEMP-001": {"description": "Wrong requirement for check_sequence."}},
+                 "REQ-SEQ-001", "REQ-SEQ-001 is not present in the specifications file.",
+                 id="requirement_not_present"),
+    pytest.param({"REQ-SEQ-001": {"type": "sequence",
+                                  "parameter": "packet_sequence"}},
+                 "REQ-SEQ-001", "REQ-SEQ-001 is missing the 'step' in the specifications file.",
+                 id="no_step"),
+])
+def test_check_sequence_wrong_requirements(input_requirement, req_id, expected_result):
+    with pytest.raises(KeyError, match=expected_result):
+        check_sequence([], input_requirement, req_id)
+
+
+@pytest.mark.parametrize("input_requirement, req_id, expected_result", [
+    pytest.param({"REQ-SEQ-001": {"type": "sequence",
+                                  "parameter": "packet_sequence",
+                                  "step": "something"}},
+                 "REQ-SEQ-001", "REQ-SEQ-001 has an invalid 'step' ('something'), it must be an integer.",
+                 id="step_is_string_word"),
+    pytest.param({"REQ-SEQ-001": {"type": "sequence",
+                                  "parameter": "packet_sequence",
+                                  "step": "2"}},
+                 "REQ-SEQ-001", "REQ-SEQ-001 has an invalid 'step' ('2'), it must be an integer.",
+                 id="step_is_string_integer"),
+])
+def test_check_sequence_step_wrong_format(input_requirement, req_id, expected_result):
+    with pytest.raises(TypeError) as exc_info:
+        check_sequence([], input_requirement, "REQ-SEQ-001")
+    assert str(exc_info.value) == expected_result
+
+
+@pytest.mark.parametrize("input_telemetry, expected_result", [
+    pytest.param([], [], id="empty_telemetry"),
+    pytest.param(make_telemetry_sequence([1042]), [], id="only_one_packet"),
+    pytest.param(make_telemetry_sequence([1042, 1044]), [1044], id="two_packets_one_gap"),
+    pytest.param(make_telemetry_sequence([1042, 1043, 1044]), [], id="no_gap"),
+    pytest.param(make_telemetry_sequence([1042, 1042]), [1042], id="same_two_packet_sequence"),
+    pytest.param(make_telemetry_sequence([1042, 1043, 1047]), [1047], id="one_gap_last_packet"),
+    pytest.param(make_telemetry_sequence([1042, 1047, 1049]), [1047, 1049], id="several_gaps_in_a_row"),
+    pytest.param(make_telemetry_sequence([1042, 1047, 1048, 1050]), [1047, 1050],
+                 id="one_correct_sequence_between_two_gaps"),
+    pytest.param(make_telemetry_sequence([1044, 1043, 1042]), [1043, 1042], id="sequence_in_reverse_order"),
+])
+def test_check_sequence_telemetry(specifications_sequence_test_data, input_telemetry, expected_result):
+    assert check_sequence(input_telemetry, specifications_sequence_test_data, "REQ-SEQ-001") == expected_result
+
+
+@pytest.mark.parametrize("input_telemetry, expected_result", [
+    pytest.param([], [], id="empty_telemetry"),
+    pytest.param(make_telemetry_sequence([1042]), [], id="only_one_packet"),
+    pytest.param(make_telemetry_sequence([1042, 1048]), [1048], id="two_packets_one_gap"),
+    pytest.param(make_telemetry_sequence([1042, 1048]), [1048], id="two_packets_one_gap"),
+    pytest.param(make_telemetry_sequence([1042, 1045, 1048]), [], id="no_gap"),
+    pytest.param(make_telemetry_sequence([1042, 1042]), [1042], id="same_two_packet_sequence"),
+    pytest.param(make_telemetry_sequence([1042, 1045, 1047]), [1047], id="one_gap_last_packet"),
+    pytest.param(make_telemetry_sequence([1042, 1043, 1049]), [1043, 1049], id="several_gaps_in_a_row"),
+    pytest.param(make_telemetry_sequence([1042, 1044, 1047, 1057]), [1044, 1057],
+                 id="one_correct_sequence_between_two_gaps"),
+    pytest.param(make_telemetry_sequence([1044, 1041, 1038]), [1041, 1038], id="sequence_in_reverse_order"),
+])
+def test_check_sequence_telemetry_step_more_than_one(specifications_sequence_test_data, input_telemetry,
+                                                     expected_result):
+    assert check_sequence(input_telemetry, specifications_sequence_test_data, "REQ-SEQ-003") == expected_result

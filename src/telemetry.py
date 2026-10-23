@@ -93,6 +93,54 @@ def check_status(telemetry: list, specifications: dict, status_req_id: str) -> l
     return invalid_records
 
 
+def check_sequence(telemetry: list, specifications: dict, seq_req_id: str) -> list:
+    """
+    This function verifies that the packet_sequence are incremented by a step define in the requirement
+
+    :param telemetry: list of telemetry records
+    :param specifications: dictionary of requirements
+    :param seq_req_id: ID of the sequence requirement to verify (e.g. "REQ-SEQ-001")
+    :return: List of packet sequences that do not follow the previous one
+    """
+    invalid_seq = []
+
+    try:
+        requirement = specifications[seq_req_id]
+    except KeyError:
+        raise KeyError(f"{seq_req_id} is not present in the specifications file.")
+
+    if requirement.get("type") != "sequence":
+        raise ValueError(f"{seq_req_id} is not a sequence requirement.")
+
+    try:
+        parameter = requirement["parameter"]
+    except KeyError:
+        raise KeyError(f"{seq_req_id} is missing the parameter attribute in the specifications file.")
+
+    try:
+        seq_step = requirement["step"]
+    except KeyError as e:
+        raise KeyError(f"{seq_req_id} is missing the {e} in the specifications file.")
+
+    if type(seq_step) is not int:
+        raise TypeError(f"{seq_req_id} has an invalid 'step' ({seq_step!r}), it must be an integer.")
+
+    previous_seq = None
+    for data in telemetry:
+        current_sequence = data.get(parameter)
+        if current_sequence is None:
+            raise ValueError(f"One telemetry record does not contain {parameter} info.")
+
+        if previous_seq is None:
+            previous_seq =  current_sequence
+            continue
+        elif current_sequence != previous_seq + seq_step:
+            invalid_seq.append(current_sequence)
+        previous_seq = current_sequence
+
+    return invalid_seq
+
+
 def get_data(telemetry_file: Path) -> list:
     """
     This function reads telemetry data from a JSON file and returns it as a list of dictionaries.
@@ -125,16 +173,46 @@ def get_requirements(req_file: Path) -> dict:
         raise ValueError(f"{req_file.name} is not a valid JSON format.")
 
 
+def get_requirement_info(specifications: list, req_id: str, attributes: list, req_type: str) -> dict:
+    req_info = {}
+
+    try:
+        requirement = specifications[req_id]
+        req_info["requirement"] = requirement
+    except KeyError:
+        raise KeyError(f"{req_id} is not present in the specifications file.")
+
+    if requirement.get("type") != req_type:
+        raise ValueError(f"{req_id} is not a {req_type} requirement.")
+
+    for att in attributes:
+        try:
+            req_info[att] = requirement[att]
+        except KeyError:
+            raise KeyError(f"{req_id} is missing the {e} in the specifications file.")
+
+    return req_info
+
+
 if __name__ == "__main__":
 
     telemetry_path = PROJECT_ROOT / "data" / "telemetry.json"
     req_path = PROJECT_ROOT / "specifications" / "requirements.json"
 
-    for req_id in ["REQ-TEMP-001", "REQ-BATTERY-001", "REQ-SIGNAL-STRENGTH-001"]:
+    for req_id in ["REQ-TEMP-001", "REQ-BATTERY-001", "REQ-SIGNAL-STRENGTH-001", "REQ-SEQ-001"]:
         try:
-            my_data = get_data(telemetry_path)
+            # my_data = get_data(telemetry_path)
             requirements = get_requirements(req_path)
-            check_range(my_data, requirements, req_id)
+            # check_range(my_data, requirements, req_id)
+            input_telemetry = [
+                {
+                    "packet_sequence": 1042,
+                }, {
+                    "packet_sequence": 1043,
+                }, {
+                    "packet_sequence": 1044,
+                }]
+            print(check_sequence(input_telemetry, requirements, req_id))
         except (ValueError, FileNotFoundError, KeyError) as e:
             print(f"ERROR: {e}")
 

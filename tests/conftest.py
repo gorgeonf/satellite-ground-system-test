@@ -40,10 +40,19 @@ def specifications_status_test_data():
     }
 
 
-def make_records(parameter: str, values: list) -> list:
-    packet_number = 1042
-    data_set = []
-    for v in values:
-        data_set.append({parameter: v, "packet_sequence": packet_number})
-        packet_number += 1
-    return data_set
+@pytest.fixture
+def specifications_sequence_test_data():
+    return {
+        "REQ-SEQ-001": {
+            "description": "Satellite packet number shall increase by one unit.",
+            "type": "sequence",
+            "parameter": "packet_sequence",
+            "step": 1
+        },
+        "REQ-SEQ-003": {
+            "description": "Satellite packet number shall increase by three units.",
+            "type": "sequence",
+            "parameter": "packet_sequence",
+            "step": 3
+        },
+    }
