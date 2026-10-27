@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from src.telemetry import get_data, get_requirements
+from src.telemetry import get_telemetry_data, get_requirements
 
 TEST_DATA_DIR = Path(__file__).resolve().parent.parent
 TEST_TELEMETRY_DATA = TEST_DATA_DIR / "tests/data/telemetry_test_data.json"
@@ -12,7 +12,7 @@ INVALID_JSON = TEST_DATA_DIR / "tests/data/invalid_json.json"
 
 
 def test_get_data():
-    assert get_data(TEST_TELEMETRY_DATA) == [
+    assert get_telemetry_data(TEST_TELEMETRY_DATA) == [
         {
             "timestamp": "2026-10-05T10:15:00",
             "satellite_id": "TESTSAT-1",
@@ -36,12 +36,12 @@ def test_get_data():
 
 def test_get_data_missing_file():
     with pytest.raises(FileNotFoundError, match="missing_file.json does not exist."):
-        get_data(MISSING_FILE)
+        get_telemetry_data(MISSING_FILE)
 
 
 def test_get_data_invalid_json():
     with pytest.raises(ValueError, match="invalid_json.json is not a valid JSON format."):
-        get_data(INVALID_JSON)
+        get_telemetry_data(INVALID_JSON)
 
 
 def test_get_requirements():

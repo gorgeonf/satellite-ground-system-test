@@ -132,7 +132,7 @@ def check_sequence(telemetry: list, specifications: dict, seq_req_id: str) -> li
             raise ValueError(f"One telemetry record does not contain {parameter} info.")
 
         if previous_seq is None:
-            previous_seq =  current_sequence
+            previous_seq = current_sequence
             continue
         elif current_sequence != previous_seq + seq_step:
             invalid_seq.append(current_sequence)
@@ -141,7 +141,7 @@ def check_sequence(telemetry: list, specifications: dict, seq_req_id: str) -> li
     return invalid_seq
 
 
-def get_data(telemetry_file: Path) -> list:
+def get_telemetry_data(telemetry_file: Path) -> list:
     """
     This function reads telemetry data from a JSON file and returns it as a list of dictionaries.
 
@@ -173,27 +173,6 @@ def get_requirements(req_file: Path) -> dict:
         raise ValueError(f"{req_file.name} is not a valid JSON format.")
 
 
-def get_requirement_info(specifications: list, req_id: str, attributes: list, req_type: str) -> dict:
-    req_info = {}
-
-    try:
-        requirement = specifications[req_id]
-        req_info["requirement"] = requirement
-    except KeyError:
-        raise KeyError(f"{req_id} is not present in the specifications file.")
-
-    if requirement.get("type") != req_type:
-        raise ValueError(f"{req_id} is not a {req_type} requirement.")
-
-    for att in attributes:
-        try:
-            req_info[att] = requirement[att]
-        except KeyError:
-            raise KeyError(f"{req_id} is missing the {e} in the specifications file.")
-
-    return req_info
-
-
 if __name__ == "__main__":
 
     telemetry_path = PROJECT_ROOT / "data" / "telemetry.json"
@@ -217,6 +196,6 @@ if __name__ == "__main__":
             print(f"ERROR: {e}")
 
     try:
-        check_status(get_data(telemetry_path), get_requirements(req_path), "REQ-COMM-001")
+        check_status(get_telemetry_data(telemetry_path), get_requirements(req_path), "REQ-COMM-001")
     except (ValueError, FileNotFoundError, KeyError) as e:
         print(f"ERROR: {e}")
