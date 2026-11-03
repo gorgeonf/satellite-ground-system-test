@@ -1,9 +1,11 @@
 # Satellite Ground System Test
 
-This project is a small Python telemetry verification example for a satellite ground system.
-It reads sample telemetry data from a JSON file, loads requirement definitions from another JSON file,
-and checks whether the recorded values comply with the requirements. The checking functions are
-tested with pytest, and the tests run on Jenkins.
+A small Python project that verifies satellite telemetry against a list of requirements.
+Requirements are stored in a JSON file, telemetry is read from another JSON file, and Python
+functions check each telemetry record against each requirement. The checking functions are tested
+with pytest. Running the verification produces a CSV report with a PASS or FAIL result per requirement.
+
+CI on Jenkins (manual runs and runs triggered by changes in the GitHub repository) is planned.
 
 ## Why this project exists
 
@@ -11,56 +13,67 @@ The repository shows a requirements-based verification workflow:
 
 - read telemetry data from disk
 - compare telemetry values against engineering requirements
-- report records that do not comply with a requirement
-- keep requirements in a separate JSON specification file so they can be changed without touching the code
+- report which requirements fail and which telemetry records cause the failure
+- keep requirements in a separate JSON file so they can be changed without touching the code
 - test the checking functions with pytest
-- run the tests on Jenkins, manually and automatically when the GitHub repository changes
+
+## Requirements
+
+The requirements are in `specifications/requirements.json`. The values are made up for this
+exercise.
+
+| ID | Type | Parameter | Rule |
+|---|---|---|---|
+| REQ-TEMP-001 | range | temperature | between -20 and 60, inclusive |
+| REQ-BATTERY-001 | range | battery_voltage | between 24 and 32, inclusive |
+| REQ-SIGNAL-STRENGTH-001 | range | signal_strength | between its min and max limits, inclusive |
+| REQ-COMM-001 | status | communication_status | must be "OK" |
+| REQ-SEQ-001 | sequence | packet_sequence | each packet number is the previous one plus 1 |
+
+The `type` of a requirement decides which checker verifies it.
+
+## Telemetry data
+
+`data/telemetry.json` contains a list of telemetry records with these fields: timestamp,
+satellite_id, temperature, battery_voltage, signal_strength, packet_sequence, communication_status.
+
+## Test architecture
+
+- `check_range`, `check_status` and `check_sequence` (in `src/telemetry.py`) each verify one
+  requirement against the telemetry and return the packet sequence numbers of the records that do
+  not comply. They raise an error when the requirement or a telemetry record is invalid.
+- `produce_requirement_results` (in `src/verification.py`) runs every requirement in the file with
+  the checker that matches its type, and returns one result row per requirement.
+  `write_results_csv_file` writes the rows to a CSV file.
+- Checker tests build their own small requirements and telemetry in the test, so they only fail
+  when a checker is broken. Boundary values, empty input and error cases are covered with
+  parametrized tests, and error tests assert the exact error message.
+- The functions that read files are tested with small files in `tests/data/`.
+- One test checks that the real `requirements.json` contains `REQ-TEMP-001` with its limits.
 
 ## Project structure
 
 ```text
 .
 ├── data/
-│   └── telemetry.json          # sample telemetry payload
+│   └── telemetry.json          # sample telemetry
 ├── specifications/
-│   └── requirements.json       # requirement thresholds
+│   └── requirements.json       # requirements
 ├── src/
-│   └── telemetry.py            # telemetry validation logic
+│   ├── telemetry.py            # file loading and requirement checkers
+│   └── verification.py         # runs all checkers and writes the CSV report
 ├── tests/
-│   └── test_telemetry.py       # placeholder for future automated tests
-├── requirements.txt            # Python dependencies
-├── README.md                   # project documentation
-├── .gitignore
-└── .venv/                      # local virtual environment
+│   ├── data/                   # small files used by the loading tests
+│   ├── conftest.py             # fixtures
+│   └── test_*.py               # pytest tests
+├── reports/                    # generated report (ignored by git)
+├── requirements.txt
+└── README.md
 ```
-
-## Data and requirements
-
-### Telemetry data
-
-The data file at `data/telemetry.json` contains a list of telemetry records such as:
-
-- timestamp
-- satellite identifier
-- temperature
-- battery voltage
-- signal strength
-- packet sequence
-- communication status
-
-### Requirement definitions
-
-The specification file at `specifications/requirements.json` stores requirement thresholds in JSON format. It currently
-includes:
-
-- `REQ-TEMP-001`: temperature must be in the range [-20, 60]
-
-The actual Python script currently validates the temperature requirement, but the structure is ready to be extended to
-the battery requirement and other telemetry checks.
 
 ## Setup
 
-Create and activate a virtual environment, then install dependencies:
+Create and activate a virtual environment, then install the dependencies.
 
 ```bash
 python -m venv .venv
@@ -80,7 +93,42 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-## Notes
+## How to run
 
-This project is intentionally minimal and is meant as a starter example for ground-system telemetry screening.
-It can be expanded to support more requirements, richer validation logic, alerting, and CLI-based reporting.
+Run all commands from the project root.
+
+Verify the telemetry against the requirements (writes `reports/requirements_report.csv`):
+
+```bash
+python -m src.verification
+```
+
+Run the tests:
+
+```bash
+pytest
+```
+
+Use `python -m src.verification` and not `python src/verification.py`, which fails with a
+`ModuleNotFoundError` because of the `src.` imports.
+
+## Example verification result
+
+For the three sample records in `data/telemetry.json` (the third one has a temperature of 65),
+the report is:
+
+```csv
+requirement,status,failing_packets
+REQ-TEMP-001,FAIL,1044
+REQ-BATTERY-001,PASS,
+REQ-SIGNAL-STRENGTH-001,PASS,
+REQ-COMM-001,PASS,
+REQ-SEQ-001,PASS,
+```
+
+When several records fail a requirement, their packet numbers are separated by `;`.
+
+## CI
+
+Planned: a Jenkins job that runs `pytest`, started manually and automatically when the GitHub
+repository changes.
