@@ -36,7 +36,11 @@ def write_results_csv_file(csv_path: Path, csv_rows: list) -> None:
 if __name__ == "__main__":
     telemetry_path = PROJECT_ROOT / "data" / "telemetry.json"
     req_path = PROJECT_ROOT / "specifications" / "requirements.json"
-    csv_path = PROJECT_ROOT / "reports" / "requirements_report.csv"
+
+    report_dir_path = PROJECT_ROOT / "reports"
+    # Create the directory safely
+    report_dir_path.mkdir(parents=True, exist_ok=True)
+    csv_path = report_dir_path / "requirements_report.csv"
 
     requirements = get_requirements(req_path)
     telemetry = get_telemetry_data(telemetry_path)
