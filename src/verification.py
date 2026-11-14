@@ -6,6 +6,23 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def produce_requirement_results(telemetry: list, requirements: dict) -> list:
+    """Check the telemetry against every requirement and build one result row per requirement.
+
+    The checker is chosen from the requirement "type": "range", "status" or "sequence".
+
+    Args:
+        telemetry: List of telemetry records.
+        requirements: Requirements keyed by requirement ID.
+
+    Returns:
+        List of rows [requirement_id, status, failing_packets], where status is
+        "PASS" or "FAIL" and failing_packets lists the failing packet_sequence
+        numbers joined with ";" (empty string on PASS).
+
+    Raises:
+        ValueError: If a requirement has an unknown type.
+        Errors raised by the checkers are not caught.
+    """
     csv_rows = []
     invalid_record = []
     for req_id, req in requirements.items():
@@ -26,6 +43,17 @@ def produce_requirement_results(telemetry: list, requirements: dict) -> list:
 
 
 def write_results_csv_file(csv_path: Path, csv_rows: list) -> None:
+    """Write the requirement results to a CSV file, with a header row.
+
+    The file is overwritten if it already exists. The parent folder must exist.
+
+    Args:
+        csv_path: Path of the CSV file to write.
+        csv_rows: Rows returned by produce_requirement_results.
+
+    Raises:
+        FileNotFoundError: If the parent folder of csv_path does not exist.
+    """
     with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
         header = ['requirement', 'status', 'failing_packets']
         writer = csv.writer(csvfile)
